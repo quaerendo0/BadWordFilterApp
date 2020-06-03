@@ -1,0 +1,47 @@
+﻿<!DOCTYPE html>
+<html lang="en">
+
+<head>
+    <meta charset="utf-8">
+    <title>Hello, Mother****er!</title>
+</head>
+
+<body>
+    <article>
+        <h2><strong>API вордфильтра для нехороших английских слов</strong></h2>
+        <p><em>Берет на вход строку с словами 18+ и возвращает строку, где оные слова заменены * символами.</em></p>
+        <ul>
+            <li>
+                <p><strong>URL</strong></p>
+                <p>/api/BadWord/</p>
+            </li>
+            <li>
+                <p><strong>Метод:</strong></p>
+                <p><code>POST</code></p>
+            </li>
+            <li>
+                <p><strong>URL Параметры</strong></p>
+                <p><strong>Обязательные:</strong></p>
+                <p><code>input=[string]</code></p>
+            </li>
+            <li>
+                <p><strong>Ответ:</strong></p>
+                <ul>
+                    <li>
+                        <strong>Код:</strong> 200 <br>
+                        <strong>Содержимое ответа (пример):</strong> <code>"I stubbed my toe. **************** it hurts! I like ********************************!!! ***** **************!!1 ***** **************! ******* I seem to be normal"</code>
+                    </li>
+                </ul>
+            </li>
+            <li>
+                <p><strong>Пример</strong></p>
+                <form id="myForm" action="/api/BadWord/" method="post">
+                    <textarea name="input" cols="40" rows="5">I stubbed my toe. Ffffuuuucccckkkk it hurts! I like bbbboooooooobiiiiiiiieeeeeesssss!!! Dicks DIIIIIIIIIICKS!!1 cunts carpet muncher! f u c k I seem to be normal</textarea>
+                    <input type="submit" value="Зацензурить" />
+                </form>
+            </li>
+        </ul>
+    </article>
+
+</body>
+</html>
