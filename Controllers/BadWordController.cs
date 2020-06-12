@@ -21,7 +21,7 @@ namespace BadWordFilterApp.Controllers
             _filter = filter;
         }
         [HttpPost]
-        public string Post([FromForm]string input)
+        public IActionResult Post([FromForm]string input)
         {
             try
             {
@@ -29,11 +29,12 @@ namespace BadWordFilterApp.Controllers
                 var censoredText = _filter.FilterText(input);
                 TimeSpan timeDiff = DateTime.Now - start;
                 _logger.LogInformation("Time spent on filtering {0}:{1}:{2}.{3}", timeDiff.Hours, timeDiff.Minutes, timeDiff.Seconds, timeDiff.Milliseconds);
-                return censoredText;
+                return new ContentResult { Content = censoredText };
             }
-            catch (Exception)
+            catch (WordFilterNotConfigured error)
             {
-                return "OOOOOH";
+                _logger.LogInformation(error.Message);
+                return StatusCode(StatusCodes.Status500InternalServerError, "Something went ****ing wrong, can't filter ****");
             }
         }
     }    

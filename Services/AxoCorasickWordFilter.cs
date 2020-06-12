@@ -7,22 +7,7 @@ using System.Text.RegularExpressions;
 using System.Threading.Tasks;
 
 namespace BadWordFilterApp.Services
-{    public class WordFilterNotConfigured : Exception
-    {
-        public WordFilterNotConfigured()
-        {
-        }
-
-        public WordFilterNotConfigured(string message)
-            : base(message)
-        {
-        }
-
-        public WordFilterNotConfigured(string message, Exception inner)
-            : base(message, inner)
-        {
-        }
-    }
+{    
     public class AxoCorasickWordFilter : IWordFilter
     {
         private readonly AxoCorasickTrie whitelistTrie;
@@ -37,19 +22,22 @@ namespace BadWordFilterApp.Services
                 WordBlacklist = System.IO.File.ReadAllLines(path);
                 path = System.IO.Path.Combine(System.AppDomain.CurrentDomain.BaseDirectory, "whitelist.cfg");
                 WordWhitelist = System.IO.File.ReadAllLines(path);
+                blacklistTrie = new AxoCorasickTrie(WordBlacklist);
+                whitelistTrie = new AxoCorasickTrie(WordWhitelist);
             }
             catch (System.IO.FileNotFoundException)
-            {
-                throw new WordFilterNotConfigured("AAAAAAAAAAAAAA");
+            {                
             }
-            blacklistTrie = new AxoCorasickTrie(WordBlacklist);
-            whitelistTrie = new AxoCorasickTrie(WordWhitelist);
         }
         static string StarCensoredMatch(Group m) =>
             new string('*', m.Captures[0].Value.Length);
 
         public string FilterText(string text)
         {
+            if (blacklistTrie == null || whitelistTrie == null)
+            {
+                throw new FilterInitializationException("Axo Corasick init failed?");
+            }
             StringBuilder censoredTextBuilder = new StringBuilder(text);
             int index = 0;
             var wordIndexPair = GetNextWord(text, index);

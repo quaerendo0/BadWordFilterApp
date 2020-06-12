@@ -10,17 +10,6 @@ namespace BadWordFilterApp.Services
     public class RegexWordFilter : IWordFilter
     {
         public IEnumerable<string> CensoredWords { get; set; }
-        private static readonly string[] defaultBadWords = new string[]
-        {
-            "*shit*",
-            "piss*",
-            "*fuck*",
-            "cunt",
-            "cocksuck*",
-            "tits",
-            "nigger*",
-            "ass"
-        };
         public RegexWordFilter()
         {
             try
@@ -31,11 +20,15 @@ namespace BadWordFilterApp.Services
             }
             catch (System.IO.FileNotFoundException)
             {
-                CensoredWords = defaultBadWords;
+                CensoredWords = null;
             }
         }
         public string FilterText(string text)
         {
+            if (CensoredWords == null)
+            {
+                throw new FilterInitializationException("Regex filter init failed?");
+            }
             if (string.IsNullOrWhiteSpace(text))
                 return text;
 
