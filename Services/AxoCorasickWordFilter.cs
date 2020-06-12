@@ -45,7 +45,7 @@ namespace BadWordFilterApp.Services
             {
                 endindex++;
             }
-            return input.Substring(beginindex, endindex - beginindex + 1);
+            return new string(input.Substring(beginindex, endindex - beginindex + 1).ToCharArray().Where(c => !Char.IsWhiteSpace(c)).ToArray());
         }
         public string FilterText(string text)
         {
