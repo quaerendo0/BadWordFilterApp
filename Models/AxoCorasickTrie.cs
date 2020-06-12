@@ -1,4 +1,6 @@
-﻿using System;
+﻿using BadWordFilterApp.Services;
+using Microsoft.CodeAnalysis.CSharp;
+using System;
 using System.Collections.Generic;
 using System.Linq;
 using System.Text;
@@ -6,10 +8,10 @@ using System.Threading.Tasks;
 
 namespace BadWordFilterApp.Models
 {
-    public struct TrieSearchResult
+    public struct MatchPosition
     {
-        public string MatchedString { get; set; }
-        public int StartingIndex { get; set; }
+        public int StartIndex { get; set; }
+        public int EndIndex { get; set; }
     }
     public class AxoCorasickTrie
     {
@@ -20,52 +22,76 @@ namespace BadWordFilterApp.Models
         }
         public bool Constains(string word)
         {
-            return Find(word).MatchedString != "";
+            return FindAll(word).Count > 0;
         }
-        public TrieSearchResult Find(string word)
+        public List<MatchPosition> FindAll(string input, bool considerDuplicateSymbols = false, bool considerObfuscators = false, bool considerWhitespaces = false, bool ignoreCase = false)
         {
+            List<MatchPosition> list = new List<MatchPosition>();
             TrieNode node = root;
-            StringBuilder wordB = new StringBuilder(word);
-            while (wordB.Length > 0)
+            int beginIndex = 0;
+            int endIndex = 0;
+            int index = 0;
+            while (index < input.Length)
             {
-                char letter = wordB[0];
-                wordB.Remove(0, 1);
-                TrieNode newnode = node.Children.Find(n => n.Data == letter);
-                if (newnode == null)
+                char character = ignoreCase ? Char.ToLower(input[index]) : input[index];
+                bool enterCheck = considerWhitespaces ? !Char.IsWhiteSpace(character) : true;
+                if (enterCheck)
                 {
-                    if (node != root)
+                    TrieNode newnode = node.Children.Find(n => n.Data == character);
+                    if (considerDuplicateSymbols && newnode == null)
                     {
-                        wordB.Insert(0, letter);
-                        node = node.FallbackNode;
+                        bool isDuplicate = node.Data == character;
+                        if (!isDuplicate && considerObfuscators)
+                        {
+                            isDuplicate = ObfuscatorDataBase.Obfuscators(node.Data).Contains(character);
+                        }
+                        if (isDuplicate)
+                        {
+                            index++;
+                            continue;
+                        }
                     }
-                }
-                else
-                {
-                    if (newnode.Children.Count > 0)
+                    if (considerObfuscators && newnode == null)
                     {
+                        foreach (var chr in ObfuscatorDataBase.Obfuscators(character))
+                        {
+                            newnode = node.Children.Find(n => n.Data == chr);
+                            if (newnode != null)
+                            {
+                                break;
+                            }
+                        }
+                    }
+                    if (newnode != null)
+                    {
+                        if (newnode.Children.Count == 0)
+                        {
+                            while ((index+1) < input.Length && (input[(index+1)] == newnode.Data || ObfuscatorDataBase.Obfuscators(newnode.Data).Contains(input[index])))
+                            {
+                                index++;
+                            }
+                            endIndex = index;
+                            var aa = new Tuple<int, int>(beginIndex, endIndex);
+                            list.Add(new MatchPosition { StartIndex = beginIndex, EndIndex = endIndex });
+                        }
+                        else if (node == root)
+                        {
+                            beginIndex = index;
+                        }
                         node = newnode;
                     }
                     else
                     {
-                        StringBuilder outStringBuilder = new StringBuilder();
-                        TrieNode builderNode = newnode;
-                        while (builderNode != root)
+                        if (node != root)
                         {
-                            outStringBuilder.Insert(0, builderNode.Data);
-                            builderNode = builderNode.Parent;
+                            node = node.FallbackNode;
+                            index--;
                         }
-                        return new TrieSearchResult{
-                            MatchedString = outStringBuilder.ToString(),
-                            StartingIndex = word.Length - wordB.Length - outStringBuilder.Length 
-                        };
                     }
                 }
+                index++;
             }
-            return new TrieSearchResult
-            {
-                MatchedString = "",
-                StartingIndex = -1
-            };
+            return list;
         }
         private readonly TrieNode root = new TrieNode();
         private TrieNode Bfs(TrieNode subroot, TrieNode searchedNode)
@@ -127,7 +153,7 @@ namespace BadWordFilterApp.Models
                 add(word);
             }
         }
-        private void add(TrieNode node, string word)
+        private void add(TrieNode node, string word, int depth)
         {
             if (word.Length > 0)
             {
@@ -136,14 +162,15 @@ namespace BadWordFilterApp.Models
                 {
                     n = new TrieNode(word[0]);
                     n.Parent = node;
+                    n.Depth = depth + 1;
                     node.Children.Add(n);
                 }
-                add(n, word.Remove(0, 1));
+                add(n, word.Remove(0, 1), depth + 1);
             }
         }
         private void add(string word)
         {
-            add(root, word);
+            add(root, word, 0);
         }
-    }    
+    }
 }

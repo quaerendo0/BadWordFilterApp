@@ -7,7 +7,7 @@ using System.Text.RegularExpressions;
 using System.Threading.Tasks;
 
 namespace BadWordFilterApp.Services
-{    
+{
     public class AxoCorasickWordFilter : IWordFilter
     {
         private readonly AxoCorasickTrie whitelistTrie;
@@ -26,63 +26,44 @@ namespace BadWordFilterApp.Services
                 whitelistTrie = new AxoCorasickTrie(WordWhitelist);
             }
             catch (System.IO.FileNotFoundException)
-            {                
+            {
+
             }
         }
         static string StarCensoredMatch(Group m) =>
             new string('*', m.Captures[0].Value.Length);
-
+        private string ExctractWholeWord(string input, int start, int end)
+        {
+            int beginindex = start;
+            while (beginindex > 0 && Char.IsLetter(input[beginindex]))
+            {
+                beginindex--;
+            }
+            beginindex++;
+            int endindex = end;
+            while (endindex < (input.Length - 1) && Char.IsLetter(input[endindex]))
+            {
+                endindex++;
+            }
+            return input.Substring(beginindex, endindex - beginindex + 1);
+        }
         public string FilterText(string text)
         {
-            if (blacklistTrie == null || whitelistTrie == null)
-            {
-                throw new FilterInitializationException("Axo Corasick init failed?");
-            }
             StringBuilder censoredTextBuilder = new StringBuilder(text);
-            int index = 0;
-            var wordIndexPair = GetNextWord(text, index);
-            while (wordIndexPair.Word != "")
+            if (blacklistTrie == null && whitelistTrie == null)
             {
-                var blacklistSearchResult = blacklistTrie.Find(wordIndexPair.Word);
-                if (blacklistSearchResult.StartingIndex != -1 && !whitelistTrie.Constains(wordIndexPair.Word))
+                throw new FilterInitializationException("Axo corasick fuck shit");
+            }
+            var memeyList = blacklistTrie.FindAll(text, true, true, true, true);
+            foreach (var item in memeyList)
+            {
+                if (!whitelistTrie.Constains(ExctractWholeWord(text, item.StartIndex, item.EndIndex)))
                 {
-                    censoredTextBuilder.Remove(
-                        wordIndexPair.StartingIndex + blacklistSearchResult.StartingIndex,
-                        blacklistSearchResult.MatchedString.Length
-                        );
-                    censoredTextBuilder.Insert(
-                        wordIndexPair.StartingIndex + blacklistSearchResult.StartingIndex,
-                        new string('*', blacklistSearchResult.MatchedString.Length)
-                        );
+                    censoredTextBuilder.Remove(item.StartIndex, item.EndIndex - item.StartIndex + 1);
+                    censoredTextBuilder.Insert(item.StartIndex, new string('*', item.EndIndex - item.StartIndex + 1));
                 }
-                index = wordIndexPair.StartingIndex + wordIndexPair.Word.Length;
-                wordIndexPair = GetNextWord(text, index);
             }
             return censoredTextBuilder.ToString();
-        }
-        private struct WordInfo
-        {
-            public string Word { get; set; }
-            public int StartingIndex { get; set; }
-        }
-        static private WordInfo GetNextWord(string inputText, int startingPoint)
-        {
-            int position = startingPoint;
-            while (position < inputText.Length && Char.IsWhiteSpace(inputText[position]))
-            {
-                position++;
-            }
-            StringBuilder builder = new StringBuilder();
-            int newStartPoint = position;
-            while (position < inputText.Length && !Char.IsWhiteSpace(inputText[position]))
-            {
-                builder.Append(inputText[position]);
-                position++;
-            }
-            return new WordInfo { 
-                Word = builder.ToString(),
-                StartingIndex = newStartPoint 
-            };
         }
     }
 }

@@ -31,7 +31,7 @@ namespace BadWordFilterApp.Controllers
                 _logger.LogInformation("Time spent on filtering {0}:{1}:{2}.{3}", timeDiff.Hours, timeDiff.Minutes, timeDiff.Seconds, timeDiff.Milliseconds);
                 return new ContentResult { Content = censoredText };
             }
-            catch (WordFilterNotConfigured error)
+            catch (FilterInitializationException error)
             {
                 _logger.LogInformation(error.Message);
                 return StatusCode(StatusCodes.Status500InternalServerError, "Something went ****ing wrong, can't filter ****");

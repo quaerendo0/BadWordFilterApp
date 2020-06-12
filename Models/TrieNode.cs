@@ -15,5 +15,6 @@ namespace BadWordFilterApp.Models
         public TrieNode Parent { get; set; }
         public TrieNode FallbackNode { get; set; }
         public char Data { get; set; }
+        public int Depth { get; set; }
     }
 }
