@@ -7,7 +7,7 @@ using System.Text;
 
 namespace BadWordFilterApp.Services
 {
-    public class WordFilter : IWordFilter
+    public class RegexWordFilter : IWordFilter
     {
         public IEnumerable<string> CensoredWords { get; set; }
         private static readonly string[] defaultBadWords = new string[]
@@ -21,11 +21,7 @@ namespace BadWordFilterApp.Services
             "nigger*",
             "ass"
         };
-        public WordFilter(IEnumerable<string> censoredWords)
-        {
-            CensoredWords = censoredWords;
-        }
-        public WordFilter()
+        public RegexWordFilter()
         {
             try
             {

@@ -14,15 +14,27 @@ namespace BadWordFilterApp.Controllers
     public class BadWordController : ControllerBase
     {
         private readonly ILogger<BadWordController> _logger;
-        public BadWordController(ILogger<BadWordController> logger)
+        private readonly IWordFilter _filter;
+        public BadWordController(IWordFilter filter, ILogger<BadWordController> logger)
         {
             _logger = logger;
+            _filter = filter;
         }
         [HttpPost]
         public string Post([FromForm]string input)
         {
-            WordFilter filter = new WordFilter();
-            return filter.FilterText(input);
+            try
+            {
+                var start = DateTime.Now;
+                var censoredText = _filter.FilterText(input);
+                TimeSpan timeDiff = DateTime.Now - start;
+                _logger.LogInformation("Time spent on filtering {0}:{1}:{2}.{3}", timeDiff.Hours, timeDiff.Minutes, timeDiff.Seconds, timeDiff.Milliseconds);
+                return censoredText;
+            }
+            catch (Exception)
+            {
+                return "OOOOOH";
+            }
         }
     }    
 }

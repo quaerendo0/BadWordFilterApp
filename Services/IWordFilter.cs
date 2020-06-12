@@ -5,7 +5,7 @@ using System.Threading.Tasks;
 
 namespace BadWordFilterApp.Services
 {
-    interface IWordFilter
+    public interface IWordFilter
     {
         string FilterText(string text);
     }

@@ -2,6 +2,8 @@ using System;
 using System.Collections.Generic;
 using System.Linq;
 using System.Threading.Tasks;
+using BadWordFilterApp.Models;
+using BadWordFilterApp.Services;
 using Microsoft.AspNetCore.Builder;
 using Microsoft.AspNetCore.Hosting;
 using Microsoft.AspNetCore.HttpsPolicy;
@@ -27,11 +29,13 @@ namespace BadWordFilterApp
         {
             services.AddMvcCore().AddRazorViewEngine();
             services.AddControllers();
+            services.AddSingleton<IWordFilter, AxoCorasickWordFilter>();
         }
 
         // This method gets called by the runtime. Use this method to configure the HTTP request pipeline.
-        public void Configure(IApplicationBuilder app, IWebHostEnvironment env)
+        public void Configure(IApplicationBuilder app, IWebHostEnvironment env, ILoggerFactory loggerFactory)
         {
+            env.EnvironmentName = "Production";
             if (env.IsDevelopment())
             {
                 app.UseDeveloperExceptionPage();
@@ -50,6 +54,7 @@ namespace BadWordFilterApp
                     pattern: "{controller=Default}/{action=Index}/{id?}");
                 endpoints.MapControllers();
             });
+            loggerFactory.AddFile("WonderfulLogs/SuperLog-{Date}.txt");
         }
     }
 }
