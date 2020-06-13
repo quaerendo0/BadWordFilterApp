@@ -37,7 +37,6 @@ namespace BadWordFilterApp.Services
             {
                 beginIndex--;
             }
-            beginIndex++;
             int endIndex = end;
             while (endIndex < (input.Length - 1) && Char.IsLetter(input[endIndex]))
             {
