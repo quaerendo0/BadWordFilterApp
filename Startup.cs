@@ -29,7 +29,7 @@ namespace BadWordFilterApp
         {
             services.AddMvcCore().AddRazorViewEngine();
             services.AddControllers();
-            services.AddSingleton<IWordFilter, RegexWordFilter>();
+            services.AddSingleton<IWordFilter, AxoCorasickWordFilter>();
         }
 
         // This method gets called by the runtime. Use this method to configure the HTTP request pipeline.

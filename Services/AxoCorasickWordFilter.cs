@@ -30,37 +30,40 @@ namespace BadWordFilterApp.Services
 
             }
         }
-        static string StarCensoredMatch(Group m) =>
-            new string('*', m.Captures[0].Value.Length);
         private string ExctractWholeWord(string input, int start, int end)
         {
-            int beginindex = start;
-            while (beginindex > 0 && Char.IsLetter(input[beginindex]))
+            int beginIndex = start;
+            while ((beginIndex - 1) > 0 && Char.IsLetter(input[beginIndex - 1]))
             {
-                beginindex--;
+                beginIndex--;
             }
-            beginindex++;
-            int endindex = end;
-            while (endindex < (input.Length - 1) && Char.IsLetter(input[endindex]))
+            beginIndex++;
+            int endIndex = end;
+            while (endIndex < (input.Length - 1) && Char.IsLetter(input[endIndex]))
             {
-                endindex++;
+                endIndex++;
             }
-            return new string(input.Substring(beginindex, endindex - beginindex + 1).ToCharArray().Where(c => !Char.IsWhiteSpace(c)).ToArray());
+            return new string(input.Substring(beginIndex, endIndex - beginIndex + 1).ToCharArray().Where(c => !Char.IsWhiteSpace(c)).ToArray());
         }
         public string FilterText(string text)
         {
             StringBuilder censoredTextBuilder = new StringBuilder(text);
-            if (blacklistTrie == null && whitelistTrie == null)
+            if (blacklistTrie == null || whitelistTrie == null)
             {
                 throw new FilterInitializationException("Axo corasick fuck shit");
             }
-            var memeyList = blacklistTrie.FindAll(text, true, true, true, true);
+            var memeyList = blacklistTrie.FindAll(text, 
+                AxoCorasickTrie.Options.ConsiderDuplicates | 
+                AxoCorasickTrie.Options.ConsiderObfuscators |
+                AxoCorasickTrie.Options.ConsiderWhitespaces |
+                AxoCorasickTrie.Options.IgnoreCase);
             foreach (var item in memeyList)
             {
-                if (!whitelistTrie.Constains(ExctractWholeWord(text, item.StartIndex, item.EndIndex)))
+                if (!whitelistTrie.Contains(ExctractWholeWord(text, item.StartIndex, item.EndIndex)))
                 {
-                    censoredTextBuilder.Remove(item.StartIndex, item.EndIndex - item.StartIndex + 1);
-                    censoredTextBuilder.Insert(item.StartIndex, new string('*', item.EndIndex - item.StartIndex + 1));
+                    int length = item.EndIndex - item.StartIndex + 1;
+                    censoredTextBuilder.Remove(item.StartIndex, length);
+                    censoredTextBuilder.Insert(item.StartIndex, new string('*', length));
                 }
             }
             return censoredTextBuilder.ToString();

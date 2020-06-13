@@ -15,16 +15,33 @@ namespace BadWordFilterApp.Models
     }
     public class AxoCorasickTrie
     {
+        public enum Options
+        {
+            Default = 1,
+            ConsiderDuplicates = 2,
+            ConsiderObfuscators = 4,
+            ConsiderWhitespaces = 8,
+            IgnoreCase = 16
+        }
         public AxoCorasickTrie(IEnumerable<string> words)
         {
             Populate(words);
             UpdateFallbackLinks();
         }
-        public bool Constains(string word)
+        public bool Contains(string word)
         {
-            return FindAll(word).Count > 0;
+            return FindAll(word, Options.Default).Count > 0;
         }
-        public List<MatchPosition> FindAll(string input, bool considerDuplicateSymbols = false, bool considerObfuscators = false, bool considerWhitespaces = false, bool ignoreCase = false)
+        private bool CheckForDuplicate(char letter1, char letter2, Options options)
+        {
+            bool isDuplicate = letter1 == letter2;
+            if (!isDuplicate && (options.HasFlag(Options.ConsiderObfuscators)))
+            {
+                isDuplicate = ObfuscatorDataBase.Obfuscators(letter1).Contains(letter2);
+            }
+            return isDuplicate;
+        }
+        public List<MatchPosition> FindAll(string input, Options options)
         {
             List<MatchPosition> list = new List<MatchPosition>();
             TrieNode node = root;
@@ -33,48 +50,38 @@ namespace BadWordFilterApp.Models
             int index = 0;
             while (index < input.Length)
             {
-                char character = ignoreCase ? Char.ToLower(input[index]) : input[index];
-                bool enterCheck = considerWhitespaces ? !Char.IsWhiteSpace(character) : true;
+                char character = options.HasFlag(Options.IgnoreCase) ? Char.ToLower(input[index]) : input[index];
+                bool enterCheck = options.HasFlag(Options.ConsiderWhitespaces) ? !Char.IsWhiteSpace(character) : true;
                 if (enterCheck)
                 {
                     TrieNode newnode = node.Children.Find(n => n.Data == character);
-                    if (considerDuplicateSymbols && newnode == null)
+                    if (newnode == null && options.HasFlag(Options.ConsiderDuplicates))
                     {
-                        bool isDuplicate = node.Data == character;
-                        if (!isDuplicate && considerObfuscators)
-                        {
-                            isDuplicate = ObfuscatorDataBase.Obfuscators(node.Data).Contains(character);
-                        }
-                        if (isDuplicate)
+                        if (CheckForDuplicate(node.Data, character, options))
                         {
                             index++;
                             continue;
                         }
                     }
-                    if (considerObfuscators && newnode == null)
+                    if (newnode == null && options.HasFlag(Options.ConsiderObfuscators))
                     {
-                        foreach (var chr in ObfuscatorDataBase.Obfuscators(character))
-                        {
-                            newnode = node.Children.Find(n => n.Data == chr);
-                            if (newnode != null)
-                            {
-                                break;
-                            }
-                        }
+                        newnode = node.Children.Find(n => ObfuscatorDataBase.Obfuscators(character).Contains(n.Data));
                     }
                     if (newnode != null)
                     {
-                        if (newnode.Children.Count == 0)
+                        if (newnode.Children.Count == 0) // Дошли до конца - слово найдено в трие
                         {
-                            while ((index+1) < input.Length && (input[(index+1)] == newnode.Data || ObfuscatorDataBase.Obfuscators(newnode.Data).Contains(input[index])))
+                            if (options.HasFlag(Options.ConsiderDuplicates))
                             {
-                                index++;
+                                while ((index + 1) < input.Length && CheckForDuplicate(input[index + 1], newnode.Data, options))
+                                {
+                                    index++;
+                                }
                             }
                             endIndex = index;
-                            var aa = new Tuple<int, int>(beginIndex, endIndex);
                             list.Add(new MatchPosition { StartIndex = beginIndex, EndIndex = endIndex });
                         }
-                        else if (node == root)
+                        else if (node == root) // Первый символ в трие найден, можно отсчитывать начало
                         {
                             beginIndex = index;
                         }
@@ -82,11 +89,11 @@ namespace BadWordFilterApp.Models
                     }
                     else
                     {
-                        if (node != root)
+                        if (node != root) // Нет смысла отматывать индекс назад если текущий узел - корень, т.е. даже первый символ не совпал
                         {
-                            node = node.FallbackNode;
                             index--;
                         }
+                        node = node.FallbackNode;
                     }
                 }
                 index++;
@@ -117,29 +124,22 @@ namespace BadWordFilterApp.Models
         }
         private void UpdateFallbackLinks()
         {
-            foreach (var child in root.Children)
-            {
-                UpdateFallbackLink(child);
-            }
+            UpdateFallbackLink(root);
         }
         private void UpdateFallbackLink(TrieNode node)
         {
-            TrieNode fallbackNode;
-            if (node.Parent == root)
-            {
-                fallbackNode = root;
-            }
-            else
-            {
-                fallbackNode = Bfs(node.Parent.FallbackNode, node);
-            }
-            if (fallbackNode != null && fallbackNode != node)
-            {
-                node.FallbackNode = fallbackNode;
-            }
-            else
+            if (node == root)
             {
                 node.FallbackNode = root;
+            }
+            else
+            {
+                TrieNode fallbackNode = Bfs(node.Parent.FallbackNode, node);
+                if (fallbackNode == null || fallbackNode == node)
+                {
+                    fallbackNode = root;
+                }
+                node.FallbackNode = fallbackNode;                
             }
             foreach (var child in node.Children)
             {
@@ -150,10 +150,10 @@ namespace BadWordFilterApp.Models
         {
             foreach (var word in words)
             {
-                add(word);
+                Add(word);
             }
         }
-        private void add(TrieNode node, string word, int depth)
+        private void Add(TrieNode node, string word, int depth)
         {
             if (word.Length > 0)
             {
@@ -165,12 +165,12 @@ namespace BadWordFilterApp.Models
                     n.Depth = depth + 1;
                     node.Children.Add(n);
                 }
-                add(n, word.Remove(0, 1), depth + 1);
+                Add(n, word.Remove(0, 1), depth + 1);
             }
         }
-        private void add(string word)
+        private void Add(string word)
         {
-            add(root, word, 0);
+            Add(root, word, 0);
         }
     }
 }
