@@ -51,12 +51,12 @@ namespace BadWordFilterApp.Services
             {
                 throw new FilterInitializationException("Axo corasick fuck shit");
             }
-            var memeyList = blacklistTrie.FindAll(text, 
+            var allPossibleBadwordLocations = blacklistTrie.FindAll(text, 
                 AxoCorasickTrie.Options.ConsiderDuplicates | 
                 AxoCorasickTrie.Options.ConsiderObfuscators |
                 AxoCorasickTrie.Options.ConsiderWhitespaces |
                 AxoCorasickTrie.Options.IgnoreCase);
-            foreach (var item in memeyList)
+            foreach (var item in allPossibleBadwordLocations)
             {
                 if (!whitelistTrie.Contains(ExctractWholeWord(text, item.StartIndex, item.EndIndex)))
                 {
