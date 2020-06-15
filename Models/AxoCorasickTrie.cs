@@ -15,6 +15,7 @@ namespace BadWordFilterApp.Models
     }
     public class AxoCorasickTrie
     {
+        private readonly ObfuscatorDatabase obfuscatorDb = new ObfuscatorDatabase();
         public enum Options
         {
             Default = 1,
@@ -37,7 +38,7 @@ namespace BadWordFilterApp.Models
             bool isDuplicate = letter1 == letter2;
             if (!isDuplicate && (options.HasFlag(Options.ConsiderObfuscators)))
             {
-                isDuplicate = ObfuscatorDataBase.Obfuscators(letter1).Contains(letter2);
+                isDuplicate = obfuscatorDb.Obfuscators(letter2).Contains(letter1);
             }
             return isDuplicate;
         }
@@ -65,7 +66,7 @@ namespace BadWordFilterApp.Models
                     }
                     if (newnode == null && options.HasFlag(Options.ConsiderObfuscators))
                     {
-                        newnode = node.Children.Find(n => ObfuscatorDataBase.Obfuscators(character).Contains(n.Data));
+                        newnode = node.Children.Find(n => obfuscatorDb.Obfuscators(character).Contains(n.Data));
                     }
                     if (newnode != null)
                     {
